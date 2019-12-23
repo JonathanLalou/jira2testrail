@@ -8,8 +8,10 @@ import com.github.jonathanlalou.jira2testrail.pojo.ParsedDescription
 import com.github.jonathanlalou.jira2testrail.pojo.Precondition
 import com.github.jonathanlalou.jira2testrail.pojo.Sequence
 import com.google.common.collect.Lists
+import com.gurock.testrail.APIClient
 import lombok.extern.log4j.Log4j
 import org.apache.commons.lang3.builder.ToStringBuilder
+import org.json.simple.JSONObject
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.util.Assert
 import org.springframework.web.bind.annotation.GetMapping
@@ -35,11 +37,25 @@ class Jira2TestRailController {
     @Value('${jira.server.url}')
     String jiraUrl
 
+    @Value('${testrail.username}')
+    String testrailUsername
+    @Value('${testrail.token}')
+    String testrailToken
+    @Value('${testrail.server.url}')
+    String testrailUrl
+    @Value('${testrail.projectId}')
+    String testrailProjectId
+
     @PostConstruct
     void postConstruct() {
         Assert.notNull(jiraUsername, "jiraUsername cannot be null")
         Assert.notNull(jiraToken, "jiraPassword cannot be null")
         Assert.notNull(jiraUrl, "jiraUrl cannot be null")
+
+        Assert.notNull(testrailUsername, "testrailUsername cannot be null")
+        Assert.notNull(testrailToken, "testrailPassword cannot be null")
+        Assert.notNull(testrailUrl, "testrailUrl cannot be null")
+        Assert.notNull(testrailProjectId, "testrailProjectId cannot be null")
     }
 
 
@@ -48,15 +64,38 @@ class Jira2TestRailController {
     String get(
             @RequestHeader(value = "referer", required = false) final String referer,
             final HttpServletRequest request) {
-        println referer
+        def issueKey = "XINET-1"
+        def issue = retrieveJiraIssue(issueKey)
 
+        final APIClient apiClient = new APIClient(testrailUrl)
+        apiClient.setUser(testrailUsername)
+        apiClient.setPassword(testrailToken)
+//        JSONObject c = (JSONObject) apiClient.sendGet("get_projects");
+//        println c
+
+//        JSONObject c = (JSONObject) apiClient.sendGet("get_case/1");
+//        println c
+//        println c.get("title")
+
+        Map data = new HashMap()
+        data.put("description", jiraUrl + "browse/" + issueKey) // don't use GStrings!
+        data.put("name", issueKey + ": " + issue.summary)
+        JSONObject r = (JSONObject) apiClient.sendPost("add_section/${testrailProjectId}".toString(), data)
+        println r
+        def suiteId = r.get("suite_id")
+        def sectionId = r.get("id")
+
+        return '{"status": "OK"}'
+    }
+
+    Issue retrieveJiraIssue(String issueKey) {
         final JiraRestClientFactory factory = new AsynchronousJiraRestClientFactory()
         final URI jiraServerUri = new URI(jiraUrl)
         final JiraRestClient restClient = factory.createWithBasicHttpAuthentication(jiraServerUri, jiraUsername, jiraToken)
 
-        final Issue issue = restClient.getIssueClient().getIssue("XINET-1").claim()
+        final Issue issue = restClient.getIssueClient().getIssue(issueKey).claim()
         println ToStringBuilder.reflectionToString(issue)
-        return '{"status": "OK"}'
+        issue
     }
 
     ParsedDescription parseDescription(String description) {
@@ -72,7 +111,7 @@ class Jira2TestRailController {
         )
     }
 
-    def ArrayList<Precondition> extractPreconditions(String description) {
+    ArrayList<Precondition> extractPreconditions(String description) {
         final List<Precondition> preconditions = Lists.newArrayList()
         def szPreconditions = trim(substringBetween(description, "h3. Pre-conditions", "h3."))
         Arrays.asList(split(szPreconditions, "\n")).findAll { it -> !it.startsWith("||") }.each {
@@ -87,7 +126,7 @@ class Jira2TestRailController {
         preconditions
     }
 
-    def ArrayList<Sequence> extractSequences(String description) {
+    ArrayList<Sequence> extractSequences(String description) {
         final List<Sequence> sequences = Lists.newArrayList()
         def szSequences = trim(substringAfter(description, "h3. Scenario"))
         Arrays.asList(split(szSequences, "\n")).findAll { it -> !it.startsWith("||") }.each {
