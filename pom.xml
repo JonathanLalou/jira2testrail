@@ -42,70 +42,31 @@
         </dependency>
         <dependency>
             <groupId>com.atlassian.jira</groupId>
-            <artifactId>jira-rest-java-client</artifactId>
+            <!--            <artifactId>jira-rest-java-client</artifactId>-->
+            <artifactId>jira-rest-java-client-core</artifactId>
             <version>${jira-rest-java-client.version}</version>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-security</artifactId>
-                </dependency>
-        -->
+        <dependency>
+            <!--            should not be needed ; DELETEME-->
+            <groupId>io.atlassian.util.concurrent</groupId>
+            <artifactId>atlassian-util-concurrent</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.atlassian.fugue</groupId>
+            <artifactId>fugue</artifactId>
+            <version>4.7.2</version>
+            <!--            should be scope provided, but not time to clean-->
+            <!--            <scope>provided</scope>-->
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-oauth2-client</artifactId>
-                </dependency>
-        -->
-        <!--
-                <dependency>
-                    <groupId>org.springframework.security</groupId>
-                    <artifactId>spring-security-oauth2-jose</artifactId>
-                </dependency>
-        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>org.thymeleaf.extras</groupId>
-                    <artifactId>thymeleaf-extras-springsecurity5</artifactId>
-                </dependency>
-        -->
-        <!--
-                <dependency>
-                    <groupId>org.springframework.security.oauth.boot</groupId>
-                    <artifactId>spring-security-oauth2-autoconfigure</artifactId>
-                    <version>2.1.1.RELEASE</version>
-                </dependency>
-        -->
-
-        <!--
-                <dependency>
-                    <groupId>org.webjars</groupId>
-                    <artifactId>js-cookie</artifactId>
-                    <version>2.1.0</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.webjars</groupId>
-                    <artifactId>jquery</artifactId>
-                    <version>2.1.1</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.webjars</groupId>
-                    <artifactId>bootstrap</artifactId>
-                    <version>3.2.0</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.webjars</groupId>
-                    <artifactId>webjars-locator-core</artifactId>
-                </dependency>
-        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -271,7 +232,8 @@
     <repositories>
         <repository>
             <id>atlassian-public</id>
-            <url>https://m2proxy.atlassian.com/repository/public</url>
+            <url>https://packages.atlassian.com/repository/public</url>
+            <!--            <url>https://m2proxy.atlassian.com/repository/public</url>-->
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>daily</updatePolicy>
