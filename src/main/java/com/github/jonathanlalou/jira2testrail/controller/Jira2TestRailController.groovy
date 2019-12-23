@@ -4,6 +4,10 @@ import com.atlassian.jira.rest.client.api.JiraRestClient
 import com.atlassian.jira.rest.client.api.JiraRestClientFactory
 import com.atlassian.jira.rest.client.api.domain.Issue
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory
+import com.github.jonathanlalou.jira2testrail.pojo.ParsedDescription
+import com.github.jonathanlalou.jira2testrail.pojo.Precondition
+import com.github.jonathanlalou.jira2testrail.pojo.Sequence
+import com.google.common.collect.Lists
 import lombok.extern.log4j.Log4j
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.springframework.beans.factory.annotation.Value
@@ -15,6 +19,11 @@ import org.springframework.web.bind.annotation.RestController
 
 import javax.annotation.PostConstruct
 import javax.servlet.http.HttpServletRequest
+
+import static org.apache.commons.lang3.StringUtils.split
+import static org.apache.commons.lang3.StringUtils.substringAfter
+import static org.apache.commons.lang3.StringUtils.substringBetween
+import static org.apache.commons.lang3.StringUtils.trim
 
 @RestController
 @Log4j
@@ -50,8 +59,46 @@ class Jira2TestRailController {
         return '{"status": "OK"}'
     }
 
-    String extratData(Issue issue) {
-        def description = issue.description
+    ParsedDescription parseDescription(String description) {
+        def businessGoal = trim(substringBetween(description, "h3. Business Goal", "h3."))
 
+        def preconditions = extractPreconditions(description)
+        def sequences = extractSequences(description)
+
+        return new ParsedDescription(
+                businessGoal: businessGoal
+                , preconditions: preconditions
+                , sequences: sequences
+        )
+    }
+
+    def ArrayList<Precondition> extractPreconditions(String description) {
+        final List<Precondition> preconditions = Lists.newArrayList()
+        def szPreconditions = trim(substringBetween(description, "h3. Pre-conditions", "h3."))
+        Arrays.asList(split(szPreconditions, "\n")).findAll { it -> !it.startsWith("||") }.each {
+            //noinspection RegExpEmptyAlternationBranch
+            def splitPrecondition = Arrays.asList(it.split('\\|'))
+            preconditions.add(new Precondition(
+                    item: trim(splitPrecondition[1])
+                    , information: trim(splitPrecondition[2])
+                    , referenceLink: trim(splitPrecondition[3])
+            ))
+        }
+        preconditions
+    }
+
+    def ArrayList<Sequence> extractSequences(String description) {
+        final List<Sequence> sequences = Lists.newArrayList()
+        def szSequences = trim(substringAfter(description, "h3. Scenario"))
+        Arrays.asList(split(szSequences, "\n")).findAll { it -> !it.startsWith("||") }.each {
+            //noinspection RegExpEmptyAlternationBranch
+            def splitSequence = Arrays.asList(it.split('\\|'))
+            sequences.add(new Sequence(
+                    number: trim(splitSequence[1])
+                    , interaction: trim(splitSequence[2])
+                    , expectedOutcome: trim(splitSequence[3])
+            ))
+        }
+        sequences
     }
 }
