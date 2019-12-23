@@ -10,4 +10,11 @@ class ParsedDescription {
     List<Precondition> preconditions
     List<Sequence> sequences
 
+    String getEnvironment() {
+        preconditions.find { it -> it.item.equalsIgnoreCase("Environment") }.information
+    }
+
+    String getCredentials() {
+        preconditions.find { it -> it.item.equalsIgnoreCase("Credentials") }.information
+    }
 }

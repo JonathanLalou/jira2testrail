@@ -49,5 +49,8 @@ h3. Scenario
         assert ToStringBuilder.reflectionToString(actual.sequences[4]).endsWith("[number=5,interaction=user interaction sequence 5,expectedOutcome=expected outcome 5]")
         assert ToStringBuilder.reflectionToString(actual.sequences[5]).endsWith("[number=6,interaction=user interaction sequence 6,expectedOutcome=expected outcome 6]")
         assert ToStringBuilder.reflectionToString(actual.sequences[6]).endsWith("[number=7,interaction=user interaction sequence 7,expectedOutcome=expected outcome 7]")
+
+        assert "nativeadmin/nativeadmin" == actual.credentials
+        assert "Xinet Server http;//10.26.52.15" == actual.environment
     }
 }
