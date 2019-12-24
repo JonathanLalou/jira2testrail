@@ -1,0 +1,34 @@
+{
+  "title": "Verify System Volumes creation at Xinet Admin Portal",
+  "custom_preconds": "System Settings: NA \r\nEnvironment: Xinet Server http;\/\/10.26.52.15 \r\nCredentials: nativeadmin\/nativeadmin ",
+  "custom_steps_separated": [
+    {
+      "content": "user interaction sequence 1",
+      "expected": "expected outcome 1"
+    },
+    {
+      "content": "user interaction sequence 2",
+      "expected": "expected outcome 2"
+    },
+    {
+      "content": "user interaction sequence 3",
+      "expected": "expected outcome 3"
+    },
+    {
+      "content": "user interaction sequence 4",
+      "expected": "expected outcome 4"
+    },
+    {
+      "content": "user interaction sequence 5",
+      "expected": "expected outcome 5"
+    },
+    {
+      "content": "user interaction sequence 6",
+      "expected": "expected outcome 6"
+    },
+    {
+      "content": "user interaction sequence 7",
+      "expected": "expected outcome 7"
+    }
+  ]
+}

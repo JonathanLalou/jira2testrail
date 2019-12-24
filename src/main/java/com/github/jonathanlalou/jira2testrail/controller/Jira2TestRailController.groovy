@@ -10,6 +10,7 @@ import com.github.jonathanlalou.jira2testrail.pojo.Sequence
 import com.google.common.collect.Lists
 import com.gurock.testrail.APIClient
 import lombok.extern.log4j.Log4j
+import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.json.simple.JSONObject
 import org.springframework.beans.factory.annotation.Value
@@ -80,12 +81,13 @@ class Jira2TestRailController {
         ]
         JSONObject responseSection = (JSONObject) apiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
         println responseSection
-        def suiteId = responseSection.get("suite_id")
         def sectionId = responseSection.get("id")
 
         final Map kase = [
-                "title"            : issue.summary
-                , "custom_preconds": parsedDescription.preconditions.collect { it -> new String(it.item + " " + it.information + " " + it.referenceLink) }.join("\r\n")
+                "title"                   : issue.summary
+                , "custom_preconds"       : parsedDescription.preconditions.collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }.join("\r\n")
+                , "custom_steps_separated": parsedDescription.sequences.collect { it -> ["content": it.interaction, "expected": it.expectedOutcome] }
+                , "custom_steps"          : parsedDescription.testRailSteps
         ]
         JSONObject responseCase = (JSONObject) apiClient.sendPost("add_case/" + sectionId, kase)
         println responseCase
@@ -109,11 +111,13 @@ class Jira2TestRailController {
 
         def preconditions = extractPreconditions(description)
         def sequences = extractSequences(description)
+        def testRailSteps = formatSteps(description)
 
         return new ParsedDescription(
                 businessGoal: businessGoal
                 , preconditions: preconditions
                 , sequences: sequences
+                , testRailSteps: testRailSteps
         )
     }
 
@@ -145,5 +149,16 @@ class Jira2TestRailController {
             ))
         }
         sequences
+    }
+
+    String formatSteps(String description) {
+        def jiraTable = trim(substringAfter(description, "h3. Scenario"))
+        // headers for the first line
+        def response = "|||:Seq#:|:User interaction sequence:|:Expected Outcome :|\n"
+        // handle the other lines
+        Arrays.asList(split(jiraTable, "\n")).findAll { it -> !it.startsWith("||") }.each {
+            response += "|" + StringUtils.removeEnd(it, "|") + "\n"
+        }
+        response.trim()
     }
 }

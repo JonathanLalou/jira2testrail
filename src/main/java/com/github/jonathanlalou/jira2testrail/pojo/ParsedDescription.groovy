@@ -9,6 +9,8 @@ class ParsedDescription {
     String businessGoal
     List<Precondition> preconditions
     List<Sequence> sequences
+    /** String of JIRA steps converted to TestRail particular implementation of Markdown */
+    String testRailSteps
 
     String getEnvironment() {
         preconditions.find { it -> it.item.equalsIgnoreCase("Environment") }.information
@@ -17,4 +19,5 @@ class ParsedDescription {
     String getCredentials() {
         preconditions.find { it -> it.item.equalsIgnoreCase("Credentials") }.information
     }
+
 }
