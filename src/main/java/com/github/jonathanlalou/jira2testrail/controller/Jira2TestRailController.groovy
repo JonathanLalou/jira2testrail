@@ -15,6 +15,7 @@ import org.json.simple.JSONObject
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.util.Assert
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
@@ -60,31 +61,37 @@ class Jira2TestRailController {
 
 
     @ResponseBody
-    @GetMapping(path = "sequence/create", produces = "text/json")
+    @GetMapping(path = "sequence/create/{issueKey}", produces = "text/json")
     String get(
+            @PathVariable issueKey,
             @RequestHeader(value = "referer", required = false) final String referer,
             final HttpServletRequest request) {
-        def issueKey = "XINET-1"
+//        def issueKey = "XINET-1"
         def issue = retrieveJiraIssue(issueKey)
+        def parsedDescription = parseDescription(issue.description)
 
         final APIClient apiClient = new APIClient(testrailUrl)
-        apiClient.setUser(testrailUsername)
-        apiClient.setPassword(testrailToken)
-//        JSONObject c = (JSONObject) apiClient.sendGet("get_projects");
-//        println c
+        apiClient.user = testrailUsername
+        apiClient.password = testrailToken
 
-//        JSONObject c = (JSONObject) apiClient.sendGet("get_case/1");
-//        println c
-//        println c.get("title")
+        final Map section = [
+                "description": jiraUrl + "browse/" + issueKey,
+                "name"       : issueKey + ": " + issue.summary
+        ]
+        JSONObject responseSection = (JSONObject) apiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
+        println responseSection
+        def suiteId = responseSection.get("suite_id")
+        def sectionId = responseSection.get("id")
 
-        Map data = new HashMap()
-        data.put("description", jiraUrl + "browse/" + issueKey) // don't use GStrings!
-        data.put("name", issueKey + ": " + issue.summary)
-        JSONObject r = (JSONObject) apiClient.sendPost("add_section/${testrailProjectId}".toString(), data)
-        println r
-        def suiteId = r.get("suite_id")
-        def sectionId = r.get("id")
+        final Map kase = [
+                "title": issue.summary
+//                , "custom_preconds"       : parsedDescription.preconditions
+//                , "custom_steps_separated": parsedDescription.sequences
+        ]
+        JSONObject responseCase = (JSONObject) apiClient.sendPost("add_case/" + sectionId, kase)
+        println responseCase
 
+        // TODO do a redirect to TestRail page
         return '{"status": "OK"}'
     }
 
