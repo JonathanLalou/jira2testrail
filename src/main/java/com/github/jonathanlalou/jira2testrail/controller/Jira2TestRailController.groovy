@@ -2,6 +2,7 @@ package com.github.jonathanlalou.jira2testrail.controller
 
 import com.atlassian.jira.rest.client.api.JiraRestClient
 import com.atlassian.jira.rest.client.api.JiraRestClientFactory
+import com.atlassian.jira.rest.client.api.domain.Comment
 import com.atlassian.jira.rest.client.api.domain.Issue
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory
 import com.github.jonathanlalou.jira2testrail.pojo.ParsedDescription
@@ -48,6 +49,7 @@ class Jira2TestRailController {
     String testrailProjectId
 
     APIClient testrailApiClient
+    JiraRestClient jiraRestClient
 
     @PostConstruct
     void postConstruct() {
@@ -63,6 +65,10 @@ class Jira2TestRailController {
         testrailApiClient = new APIClient(testrailUrl)
         testrailApiClient.user = testrailUsername
         testrailApiClient.password = testrailToken
+
+        final JiraRestClientFactory jiraRestClientFactory = new AsynchronousJiraRestClientFactory()
+        final URI jiraServerUri = new URI(jiraUrl)
+        jiraRestClient = jiraRestClientFactory.createWithBasicHttpAuthentication(jiraServerUri, jiraUsername, jiraToken)
     }
 
     @ResponseBody
@@ -75,6 +81,7 @@ class Jira2TestRailController {
 
         String targetUrl = "${testrailUrl}/?/cases/view/${caseId}"
         println targetUrl
+        addCommentInJira(issue, targetUrl)
 
         return new RedirectView(targetUrl)
     }
@@ -114,13 +121,15 @@ class Jira2TestRailController {
     }
 
     Issue retrieveJiraIssue(String issueKey) {
-        final JiraRestClientFactory factory = new AsynchronousJiraRestClientFactory()
-        final URI jiraServerUri = new URI(jiraUrl)
-        final JiraRestClient restClient = factory.createWithBasicHttpAuthentication(jiraServerUri, jiraUsername, jiraToken)
-
-        final Issue issue = restClient.getIssueClient().getIssue(issueKey).claim()
+        final Issue issue = jiraRestClient.getIssueClient().getIssue(issueKey).claim()
         println ToStringBuilder.reflectionToString(issue)
         issue
+    }
+
+    Comment addCommentInJira(Issue issue, String targetUrl) {
+        def comment = Comment.valueOf("Corresponding case in TestRail: ${targetUrl}")
+        jiraRestClient.getIssueClient().addComment(issue.commentsUri, comment).claim()
+        comment
     }
 
     ParsedDescription parseDescription(String description) {
