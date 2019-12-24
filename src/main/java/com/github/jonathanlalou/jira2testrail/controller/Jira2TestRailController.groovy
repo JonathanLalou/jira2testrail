@@ -83,9 +83,14 @@ class Jira2TestRailController {
         println responseSection
         def sectionId = responseSection.get("id")
 
+        def customPreconds = parsedDescription.preconditions
+                .findAll { it -> ["Environment", "Credentials"].contains(it.item) }
+                .collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }
+                .join("\r\n")
+
         final Map kase = [
                 "title"                   : issue.summary
-                , "custom_preconds"       : parsedDescription.preconditions.collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }.join("\r\n")
+                , "custom_preconds"       : customPreconds
                 , "custom_steps_separated": parsedDescription.sequences.collect { it -> ["content": it.interaction, "expected": it.expectedOutcome] }
                 , "custom_steps"          : parsedDescription.testRailSteps
         ]
