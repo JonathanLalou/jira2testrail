@@ -17,12 +17,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.util.Assert
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
 
 import javax.annotation.PostConstruct
-import javax.servlet.http.HttpServletRequest
 
 import static org.apache.commons.lang3.StringUtils.split
 import static org.apache.commons.lang3.StringUtils.substringAfter
@@ -48,7 +46,7 @@ class Jira2TestRailController {
     @Value('${testrail.projectId}')
     String testrailProjectId
 
-    APIClient testRailApiClient
+    APIClient testrailApiClient
 
     @PostConstruct
     void postConstruct() {
@@ -61,34 +59,33 @@ class Jira2TestRailController {
         Assert.notNull(testrailUrl, "testrailUrl cannot be null")
         Assert.notNull(testrailProjectId, "testrailProjectId cannot be null")
 
-        testRailApiClient = new APIClient(testrailUrl)
-        testRailApiClient.user = testrailUsername
-        testRailApiClient.password = testrailToken
+        testrailApiClient = new APIClient(testrailUrl)
+        testrailApiClient.user = testrailUsername
+        testrailApiClient.password = testrailToken
     }
-
 
     @ResponseBody
     @GetMapping(path = "sequence/create/{issueKey}", produces = "text/json")
-    String get(
-            @PathVariable issueKey,
-            @RequestHeader(value = "referer", required = false) final String referer,
-            final HttpServletRequest request) {
+    String jira2TestRail(@PathVariable issueKey) {
 
         def issue = retrieveJiraIssue(issueKey)
 
-        createEntriesInTestRail(issueKey, issue)
+        def caseId = createEntriesInTestRail(issueKey, issue)
+
+        String targetUrl = "${testrailUrl}/?/cases/view/${caseId}"
+        println targetUrl
 
         // TODO do a redirect to TestRail page
         return '{"status": "OK"}'
     }
 
-    def void createEntriesInTestRail(String issueKey, Issue issue) {
+    def String createEntriesInTestRail(String issueKey, Issue issue) {
         def parsedDescription = parseDescription(issue.description)
         def sectionId = createSectionInTestRail(issueKey, issue)
         createCaseInTestRail(parsedDescription, issue, sectionId)
     }
 
-    def void createCaseInTestRail(ParsedDescription parsedDescription, Issue issue, String sectionId) {
+    def String createCaseInTestRail(ParsedDescription parsedDescription, Issue issue, String sectionId) {
         def customPreconds = parsedDescription.preconditions
                 .findAll { it -> ["Environment", "Credentials"].contains(it.item) }
                 .collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }
@@ -100,8 +97,9 @@ class Jira2TestRailController {
                 , "custom_steps_separated": parsedDescription.sequences.collect { it -> ["content": it.interaction, "expected": it.expectedOutcome] }
                 , "custom_steps"          : parsedDescription.testRailSteps
         ]
-        JSONObject responseCase = (JSONObject) testRailApiClient.sendPost("add_case/" + sectionId, kase)
+        JSONObject responseCase = (JSONObject) testrailApiClient.sendPost("add_case/" + sectionId, kase)
         println responseCase
+        responseCase.get("id")
     }
 
     def String createSectionInTestRail(String issueKey, Issue issue) {
@@ -109,7 +107,7 @@ class Jira2TestRailController {
                 "description": jiraUrl + "browse/" + issueKey,
                 "name"       : issueKey + ": " + issue.summary
         ]
-        JSONObject responseSection = (JSONObject) testRailApiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
+        JSONObject responseSection = (JSONObject) testrailApiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
         println responseSection
         def sectionId = responseSection.get("id")
         sectionId
