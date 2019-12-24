@@ -48,6 +48,8 @@ class Jira2TestRailController {
     @Value('${testrail.projectId}')
     String testrailProjectId
 
+    APIClient testRailApiClient
+
     @PostConstruct
     void postConstruct() {
         Assert.notNull(jiraUsername, "jiraUsername cannot be null")
@@ -58,6 +60,10 @@ class Jira2TestRailController {
         Assert.notNull(testrailToken, "testrailPassword cannot be null")
         Assert.notNull(testrailUrl, "testrailUrl cannot be null")
         Assert.notNull(testrailProjectId, "testrailProjectId cannot be null")
+
+        testRailApiClient = new APIClient(testrailUrl)
+        testRailApiClient.user = testrailUsername
+        testRailApiClient.password = testrailToken
     }
 
 
@@ -69,20 +75,20 @@ class Jira2TestRailController {
             final HttpServletRequest request) {
 
         def issue = retrieveJiraIssue(issueKey)
+
+        createEntriesInTestRail(issueKey, issue)
+
+        // TODO do a redirect to TestRail page
+        return '{"status": "OK"}'
+    }
+
+    def void createEntriesInTestRail(String issueKey, Issue issue) {
         def parsedDescription = parseDescription(issue.description)
+        def sectionId = createSectionInTestRail(issueKey, issue)
+        createCaseInTestRail(parsedDescription, issue, sectionId)
+    }
 
-        final APIClient apiClient = new APIClient(testrailUrl)
-        apiClient.user = testrailUsername
-        apiClient.password = testrailToken
-
-        final Map section = [
-                "description": jiraUrl + "browse/" + issueKey,
-                "name"       : issueKey + ": " + issue.summary
-        ]
-        JSONObject responseSection = (JSONObject) apiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
-        println responseSection
-        def sectionId = responseSection.get("id")
-
+    def void createCaseInTestRail(ParsedDescription parsedDescription, Issue issue, String sectionId) {
         def customPreconds = parsedDescription.preconditions
                 .findAll { it -> ["Environment", "Credentials"].contains(it.item) }
                 .collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }
@@ -94,11 +100,19 @@ class Jira2TestRailController {
                 , "custom_steps_separated": parsedDescription.sequences.collect { it -> ["content": it.interaction, "expected": it.expectedOutcome] }
                 , "custom_steps"          : parsedDescription.testRailSteps
         ]
-        JSONObject responseCase = (JSONObject) apiClient.sendPost("add_case/" + sectionId, kase)
+        JSONObject responseCase = (JSONObject) testRailApiClient.sendPost("add_case/" + sectionId, kase)
         println responseCase
+    }
 
-        // TODO do a redirect to TestRail page
-        return '{"status": "OK"}'
+    def String createSectionInTestRail(String issueKey, Issue issue) {
+        final Map section = [
+                "description": jiraUrl + "browse/" + issueKey,
+                "name"       : issueKey + ": " + issue.summary
+        ]
+        JSONObject responseSection = (JSONObject) testRailApiClient.sendPost("add_section/${testrailProjectId}".toString(), section)
+        println responseSection
+        def sectionId = responseSection.get("id")
+        sectionId
     }
 
     Issue retrieveJiraIssue(String issueKey) {
