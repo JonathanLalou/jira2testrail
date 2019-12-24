@@ -66,7 +66,7 @@ class Jira2TestRailController {
             @PathVariable issueKey,
             @RequestHeader(value = "referer", required = false) final String referer,
             final HttpServletRequest request) {
-//        def issueKey = "XINET-1"
+
         def issue = retrieveJiraIssue(issueKey)
         def parsedDescription = parseDescription(issue.description)
 
@@ -84,9 +84,8 @@ class Jira2TestRailController {
         def sectionId = responseSection.get("id")
 
         final Map kase = [
-                "title": issue.summary
-//                , "custom_preconds"       : parsedDescription.preconditions
-//                , "custom_steps_separated": parsedDescription.sequences
+                "title"            : issue.summary
+                , "custom_preconds": parsedDescription.preconditions.collect { it -> new String(it.item + " " + it.information + " " + it.referenceLink) }.join("\r\n")
         ]
         JSONObject responseCase = (JSONObject) apiClient.sendPost("add_case/" + sectionId, kase)
         println responseCase
