@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.view.RedirectView
 
 import javax.annotation.PostConstruct
 
@@ -66,7 +67,7 @@ class Jira2TestRailController {
 
     @ResponseBody
     @GetMapping(path = "sequence/create/{issueKey}", produces = "text/json")
-    String jira2TestRail(@PathVariable issueKey) {
+    RedirectView jira2TestRail(@PathVariable issueKey) {
 
         def issue = retrieveJiraIssue(issueKey)
 
@@ -75,8 +76,7 @@ class Jira2TestRailController {
         String targetUrl = "${testrailUrl}/?/cases/view/${caseId}"
         println targetUrl
 
-        // TODO do a redirect to TestRail page
-        return '{"status": "OK"}'
+        return new RedirectView(targetUrl)
     }
 
     def String createEntriesInTestRail(String issueKey, Issue issue) {
