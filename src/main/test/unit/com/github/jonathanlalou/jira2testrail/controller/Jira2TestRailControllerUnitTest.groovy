@@ -1,13 +1,13 @@
 package com.github.jonathanlalou.jira2testrail.controller
 
+import com.github.jonathanlalou.jira2testrail.bean.Jira2TestRailHelper
 import org.apache.commons.lang3.builder.ToStringBuilder
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class Jira2TestRailControllerUnitTest {
 
-    final Jira2TestRailController jira2TestRailController = new Jira2TestRailController();
-    def description = """
+    final Jira2TestRailController jira2TestRailController = new Jira2TestRailController(jira2TestRailHelper: new Jira2TestRailHelper());
+    public static final String description = """
 h3. Business Goal
 
 this is the business goal
@@ -55,20 +55,5 @@ h3. Scenario
         assert "Xinet Server http;//10.26.52.15" == actual.environment
     }
 
-    @Test
-    void formatSteps() {
-        def expected = """
-|||:Seq#:|:User interaction sequence:|:Expected Outcome :|
-||1 |user interaction sequence 1 |expected outcome 1 | 
-||2 |user interaction sequence 2 |expected outcome 2 | 
-||3 |user interaction sequence 3 |expected outcome 3 | 
-||4 |user interaction sequence 4 |expected outcome 4 | 
-||5 |user interaction sequence 5 |expected outcome 5 | 
-||6 |user interaction sequence 6 |expected outcome 6 | 
-||7 |user interaction sequence 7 |expected outcome 7 | 
-""".trim()
-
-        Assertions.assertEquals(expected, jira2TestRailController.formatSteps(description))
-    }
 
 }
