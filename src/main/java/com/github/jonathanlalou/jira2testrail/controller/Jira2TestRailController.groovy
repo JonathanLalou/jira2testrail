@@ -68,18 +68,17 @@ class Jira2TestRailController {
         return new RedirectView(targetUrl)
     }
 
-    def String createEntriesInTestRail(String issueKey, Issue issue) {
+    String createEntriesInTestRail(String issueKey, Issue issue) {
         def parsedDescription = parseDescription(issue.description)
         def sectionId = createSectionInTestRail(issueKey, issue)
         createCaseInTestRail(parsedDescription, issue, sectionId)
     }
 
-    def String createCaseInTestRail(ParsedDescription parsedDescription, Issue issue, String sectionId) {
+    String createCaseInTestRail(ParsedDescription parsedDescription, Issue issue, String sectionId) {
         def customPreconds = parsedDescription.preconditions
                 .findAll { it -> ["Environment", "Credentials"].contains(it.item) }
-                .collect { it -> new String(it.item + ": " + it.information + " " + it.referenceLink) }
+                .collect { it -> new String("1. " + it.item + ": " + it.information + " " + it.referenceLink) }
                 .join("\r\n")
-//        TODO add a "#" to get numbers in TestRail
 
         final Map kase = [
                 "title"                   : issue.summary
@@ -93,7 +92,7 @@ class Jira2TestRailController {
         responseCase.get("id")
     }
 
-    def String createSectionInTestRail(String issueKey, Issue issue) {
+    String createSectionInTestRail(String issueKey, Issue issue) {
         final Map section = [
                 "description": jiraUrl + "browse/" + issueKey,
                 "name"       : issueKey + ": " + issue.summary
