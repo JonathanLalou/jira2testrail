@@ -50,7 +50,7 @@ class Jira2TestRailHelper {
     String formatSteps(String description) {
         def jiraTable = trim(substringAfter(description, "h3. Scenario"))
         // headers for the first line
-        def response = "|||:Seq#:|:User interaction sequence:|:Expected Outcome :|\n"
+        def response = "|||:Seq#:|:User interaction sequence:|:Expected Outcome :\n"
         // handle the other lines
         Arrays.asList(split(jiraTable, "\n")).findAll { it -> !it.startsWith("||") }.each {
             response += "|" + StringUtils.removeEnd(it, "|") + "\n"
